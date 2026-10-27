@@ -5,29 +5,68 @@ import {
   useFonts,
 } from '@expo-google-fonts/playfair-display';
 import * as Notifications from 'expo-notifications';
-import { router, SplashScreen, Stack } from 'expo-router';
+import { ErrorBoundaryProps, router, SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { configureNotificationHandler } from '../src/services/notifications';
 import { colors } from '../src/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
-configureNotificationHandler();
 
 // Deep link somatic://quick-reset uruchomiony „na zimno” z widgetu nadal ma pod spodem zakładki.
 export const unstable_settings = { initialRouteName: '(tabs)' };
 
+/** Zamiast „zawieszenia” w buildzie Release pokazujemy treść błędu. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: 24, paddingTop: 80 }}
+    >
+      <Text style={{ fontSize: 22, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Coś poszło nie tak</Text>
+      <Text selectable style={{ fontSize: 15, color: colors.text, marginBottom: 12 }}>
+        {error.name}: {error.message}
+      </Text>
+      <Text selectable style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Menlo' }}>
+        {error.stack}
+      </Text>
+      <Pressable
+        onPress={retry}
+        style={{ marginTop: 24, padding: 14, borderRadius: 999, backgroundColor: colors.sage, alignItems: 'center' }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '600' }}>Spróbuj ponownie</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
 function useNotificationDeepLinks() {
   useEffect(() => {
-    const open = (response: Notifications.NotificationResponse | null) => {
-      const url = response?.notification.request.content.data?.url;
+    try {
+      configureNotificationHandler();
+    } catch (e) {
+      console.warn('Notification handler', e);
+    }
+
+    const open = (response: Notifications.NotificationResponse | null | undefined) => {
+      const url = response?.notification?.request?.content?.data?.url;
       if (typeof url === 'string' && url.includes('quick-reset')) router.push('/quick-reset');
     };
-    Notifications.getLastNotificationResponseAsync().then(open).catch(() => undefined);
-    const sub = Notifications.addNotificationResponseReceivedListener(open);
-    return () => sub.remove();
+
+    let sub: { remove: () => void } | undefined;
+    try {
+      open(Notifications.getLastNotificationResponse());
+      sub = Notifications.addNotificationResponseReceivedListener(open);
+    } catch (e) {
+      console.warn('Notification listener', e);
+    }
+    return () => sub?.remove();
   }, []);
 }
 
@@ -37,7 +76,13 @@ export default function RootLayout() {
     PlayfairDisplay_400Regular_Italic,
     PlayfairDisplay_500Medium,
   });
-  const ready = fontsLoaded || !!fontError;
+  // Bezpiecznik: gdyby fonty się nie załadowały, startujemy po 3 s z krojem systemowym.
+  const [fontTimeout, setFontTimeout] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setFontTimeout(true), 3000);
+    return () => clearTimeout(id);
+  }, []);
+  const ready = fontsLoaded || !!fontError || fontTimeout;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => undefined);
@@ -45,7 +90,7 @@ export default function RootLayout() {
 
   useNotificationDeepLinks();
 
-  if (!ready) return null;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 
   return (
     <SafeAreaProvider>
