@@ -11,7 +11,7 @@ Zasady: dane w 100% lokalne i offline, bez logowania. Zero presji, zero czerwony
 | **Timer** | Kafel „Reset przy biurku (60 s)”: pełny ekran bez licznika, rotacyjne komunikaty, oddychające koła, haptyka po 60 s, potem ocena reakcji. Standardowy timer 1/3/5/10/15 min z pauzą, rotacyjnymi inskrypcjami i zapisem sesji przerwanych. |
 | **Reakcje** | Łączna liczba sesji i minut, % spokoju w tygodniu, wykres 7 dni segmentowany wg reakcji (spokój / zniecierpliwienie / walka), filtry i historia. Przytrzymanie sesji usuwa ją. |
 | **Wiedza** | Trzy sekcje: Mindset (Somatic Tracking, czego unikać, błąd predykcji), Nurty (1. i 2. poziom psychoterapii i miejsce PRT), Sensytyzacja ośrodkowa. |
-| **Ustawienia** | Codzienne przypomnienia (`expo-notifications`), haptyka, eksport JSON (`expo-sharing`: AirDrop, Pliki), import JSON z walidacją (tryby „Zastąp” i „Połącz”), instrukcja dodania widgetu. |
+| **Ustawienia** | Codzienne przypomnienia o dowolnych godzinach co do minuty (do 12, natywny wybór czasu iOS, `expo-notifications`), haptyka, eksport JSON (`expo-sharing`: AirDrop, Pliki), import JSON z walidacją (tryby „Zastąp” i „Połącz”), instrukcja dodania widgetu. |
 
 ## Stack
 

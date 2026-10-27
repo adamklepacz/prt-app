@@ -3,7 +3,7 @@ import { Download, Smartphone, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { Pill } from '../../src/components/Pill';
+import { ReminderTimesEditor } from '../../src/components/ReminderTimesEditor';
 import { Card, PrimaryButton, Screen, ScreenHeader, SectionLabel } from '../../src/components/ui';
 import { parseBackup } from '../../src/domain/backup';
 import { pickBackupText, shareBackup } from '../../src/services/backupFiles';
@@ -11,8 +11,6 @@ import { syncReminders } from '../../src/services/notifications';
 import { useTrackingStore } from '../../src/store/trackingStore';
 import { colors, fonts, spacing, type } from '../../src/theme/tokens';
 import { ImportMode } from '../../src/types';
-
-const REMINDER_SLOTS = ['08:00', '10:00', '12:00', '14:00', '16:00', '17:00', '19:00', '21:00'];
 
 export default function SettingsScreen() {
   const settings = useTrackingStore((s) => s.settings);
@@ -39,10 +37,10 @@ export default function SettingsScreen() {
     }
   };
 
-  const toggleSlot = (time: string) => {
-    const has = settings.reminderTimes.includes(time);
-    const next = has ? settings.reminderTimes.filter((t) => t !== time) : [...settings.reminderTimes, time];
-    applyReminders(settings.remindersEnabled && next.length > 0, next);
+  const changeTimes = (next: string[]) => {
+    // Dodanie pierwszej godziny włącza przypomnienia; usunięcie ostatniej – wyłącza.
+    const enabled = next.length > 0 && (settings.remindersEnabled || settings.reminderTimes.length === 0);
+    applyReminders(enabled, next);
   };
 
   const handleExport = async () => {
@@ -109,14 +107,12 @@ export default function SettingsScreen() {
       <Card>
         <Row
           title="Delikatne przypomnienia"
-          subtitle="Codziennie o wybranych godzinach"
+          subtitle="Codziennie o Twoich godzinach – dowolnie, co do minuty"
           value={settings.remindersEnabled}
           onChange={(v) => applyReminders(v, settings.reminderTimes.length ? settings.reminderTimes : ['10:00'])}
         />
-        <View style={[styles.slots, !settings.remindersEnabled && styles.dimmed]}>
-          {REMINDER_SLOTS.map((t) => (
-            <Pill key={t} label={t} selected={settings.reminderTimes.includes(t)} onPress={() => toggleSlot(t)} />
-          ))}
+        <View style={!settings.remindersEnabled && styles.dimmed}>
+          <ReminderTimesEditor times={settings.reminderTimes} onChange={changeTimes} />
         </View>
       </Card>
 
@@ -231,8 +227,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   rowText: { flex: 1 },
   rowSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  slots: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg },
-  dimmed: { opacity: 0.5 },
+  dimmed: { opacity: 0.6 },
   paragraph: { marginBottom: spacing.lg },
   buttons: { gap: spacing.sm },
   widgetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
