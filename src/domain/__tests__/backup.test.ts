@@ -87,6 +87,31 @@ describe('validateBackup – integralność pliku backupu', () => {
   });
 });
 
+describe('validateBackup – nowe, opcjonalne ustawienia', () => {
+  it('akceptuje backup bez nowych pól (zgodność ze starszymi plikami)', () => {
+    const base = validBackup();
+    const { bellEnabled, customTrackingMinutes, ...oldSettings } = base.settings;
+    expect(validateBackup({ ...base, settings: oldSettings })).toEqual([]);
+  });
+
+  it('waliduje własny czas obserwacji i dzwonek', () => {
+    const base = validBackup();
+    expect(validateBackup({ ...base, settings: { ...base.settings, customTrackingMinutes: 7 } })).toEqual([]);
+    expect(validateBackup({ ...base, settings: { ...base.settings, customTrackingMinutes: 0 } }).join(' ')).toContain(
+      'customTrackingMinutes',
+    );
+    expect(validateBackup({ ...base, settings: { ...base.settings, customTrackingMinutes: 7.5 } }).length).toBeGreaterThan(0);
+    expect(validateBackup({ ...base, settings: { ...base.settings, bellEnabled: 'tak' } }).join(' ')).toContain('bellEnabled');
+  });
+
+  it('parseBackup uzupełnia brakujący dzwonek wartością domyślną (włączony)', () => {
+    const base = validBackup();
+    const { bellEnabled, ...oldSettings } = base.settings;
+    const result = parseBackup({ ...base, settings: oldSettings });
+    expect(result.ok && result.backup.settings.bellEnabled).toBe(true);
+  });
+});
+
 describe('parseBackup', () => {
   it('parsuje string JSON do znormalizowanego backupu', () => {
     const result = parseBackup(JSON.stringify(validBackup()));

@@ -253,6 +253,21 @@ describe('trackingStore – ustawienia', () => {
     expect(store.getState().settings.reminderTimes).toEqual(['09:30', '17:00']);
   });
 
+  it('zapamiętuje własny czas obserwacji i waliduje zakres', () => {
+    const { store } = makeStore();
+    store.getState().updateSettings({ customTrackingMinutes: 7 });
+    expect(store.getState().settings.customTrackingMinutes).toBe(7);
+
+    expect(() => store.getState().updateSettings({ customTrackingMinutes: 0 })).toThrow();
+    expect(() => store.getState().updateSettings({ customTrackingMinutes: 121 })).toThrow();
+    expect(store.getState().settings.customTrackingMinutes).toBe(7);
+  });
+
+  it('dzwonek na koniec obserwacji jest domyślnie włączony', () => {
+    const { store } = makeStore();
+    expect(store.getState().settings.bellEnabled).toBe(true);
+  });
+
   it('odrzuca niepoprawny format godziny', () => {
     const { store } = makeStore();
     expect(() => store.getState().updateSettings({ reminderTimes: ['25:00'] })).toThrow();

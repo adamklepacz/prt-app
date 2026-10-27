@@ -2,6 +2,8 @@ import * as Haptics from 'expo-haptics';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { QuickReset } from '../QuickReset';
+import { playBell } from '../../services/sound';
+import { scheduleTimerEndNotification } from '../../services/timerNotifications';
 import { Timer } from '../Timer';
 import { useTrackingStore } from '../../store/trackingStore';
 import { DEFAULT_SETTINGS } from '../../types';
@@ -10,6 +12,8 @@ jest.mock('../../services/timerNotifications', () => ({
   scheduleTimerEndNotification: jest.fn(() => Promise.resolve('notif-1')),
   cancelTimerEndNotification: jest.fn(() => Promise.resolve()),
 }));
+
+jest.mock('../../services/sound', () => ({ playBell: jest.fn(), preloadBell: jest.fn() }));
 
 // Animacja oddechu nie jest przedmiotem testu (pętla Animated + fake timers).
 jest.mock('../BreathingCircle', () => ({ BreathingCircle: () => null }));
@@ -34,9 +38,10 @@ describe('<Timer /> – standardowy Somatic Tracking', () => {
   it('pokazuje pigułki czasu i domyślnie 1 minutę', async () => {
     await render(<Timer />);
 
-    for (const label of ['1 min', '3 min', '5 min', '10 min', '15 min']) {
+    for (const label of ['1 min', '3 min', '5 min', '10 min', '···']) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+    expect(screen.queryByText('15 min')).toBeNull();
     expect(screen.getByTestId('timer-display').props.children).toBe('01:00');
   });
 
@@ -164,7 +169,101 @@ describe('<Timer /> – standardowy Somatic Tracking', () => {
   });
 });
 
+describe('<Timer /> – własny czas obserwacji („···”)', () => {
+  it('ustawia własny czas w minutach i zapamiętuje go', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Własny czas'));
+    expect(screen.getByText('Własny czas obserwacji')).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByLabelText('Liczba minut'), '7');
+    await fireEvent.press(screen.getByText('Ustaw'));
+
+    expect(screen.getByTestId('timer-display').props.children).toBe('07:00');
+    expect(screen.getByText('7 min')).toBeTruthy();
+    expect(useTrackingStore.getState().settings.customTrackingMinutes).toBe(7);
+    expect(screen.queryByText('Własny czas obserwacji')).toBeNull();
+  });
+
+  it('odrzuca niepoprawną liczbę minut', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Własny czas'));
+    await fireEvent.changeText(screen.getByLabelText('Liczba minut'), '0');
+    await fireEvent.press(screen.getByText('Ustaw'));
+
+    expect(screen.getByText('Podaj liczbę minut od 1 do 120.')).toBeTruthy();
+    expect(screen.getByTestId('timer-display').props.children).toBe('01:00');
+  });
+
+  it('pokazuje zapamiętany własny czas i podpowiada go w polu', async () => {
+    useTrackingStore.getState().updateSettings({ customTrackingMinutes: 12 });
+    await render(<Timer />);
+
+    expect(screen.getByText('12 min')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Własny czas'));
+    expect(screen.getByLabelText('Liczba minut').props.value).toBe('12');
+  });
+
+  it('zapisuje sesję z własnym czasem', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Własny czas'));
+    await fireEvent.changeText(screen.getByLabelText('Liczba minut'), '7');
+    await fireEvent.press(screen.getByText('Ustaw'));
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    await advance(7 * 60_000);
+    await fireEvent.press(screen.getByText('Spokojna obserwacja'));
+    await fireEvent.press(screen.getByText('Zapisz obserwację'));
+
+    expect(useTrackingStore.getState().sessions[0].durationSeconds).toBe(420);
+  });
+});
+
+describe('<Timer /> – dzwonek na koniec obserwacji', () => {
+  it('gra dzwonek, gdy obserwacja dobiegnie końca', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    await advance(59_000);
+    expect(playBell).not.toHaveBeenCalled();
+    await advance(1_000);
+
+    expect(playBell).toHaveBeenCalledTimes(1);
+  });
+
+  it('powiadomienie w tle (zablokowany telefon) też ma dzwonek', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+
+    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: true });
+  });
+
+  it('nie gra dzwonka przy przerwanej sesji', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    await advance(20_000);
+    await fireEvent.press(screen.getByLabelText('Zakończ sesję'));
+
+    expect(playBell).not.toHaveBeenCalled();
+  });
+
+  it('nie gra dzwonka, gdy jest wyłączony w ustawieniach', async () => {
+    useTrackingStore.getState().updateSettings({ bellEnabled: false });
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    await advance(60_000);
+
+    expect(playBell).not.toHaveBeenCalled();
+    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: false });
+  });
+});
+
 describe('<QuickReset /> – reset przy biurku (60 s)', () => {
+  it('kończy się tylko delikatną haptyką, bez dzwonka (biuro)', async () => {
+    await render(<QuickReset onDone={jest.fn()} />);
+    await advance(60_000);
+
+    expect(playBell).not.toHaveBeenCalled();
+    expect(Haptics.notificationAsync).toHaveBeenCalled();
+  });
+
   it('startuje automatycznie i nie pokazuje cyfrowego licznika', async () => {
     await render(<QuickReset onDone={jest.fn()} />);
     await advance(5_000);

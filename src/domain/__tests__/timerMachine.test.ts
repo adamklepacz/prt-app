@@ -1,4 +1,4 @@
-import { createTimerState, remainingSeconds, timerReducer, TimerState } from '../timerMachine';
+import { createTimerState, DURATION_PRESETS_SECONDS, remainingSeconds, timerReducer, TimerState } from '../timerMachine';
 
 const T0 = 1_000_000;
 
@@ -97,4 +97,20 @@ describe('timerMachine – przejścia stanów', () => {
     const finished = timerReducer(running, { type: 'TICK', now: T0 + 60_000 });
     expect(timerReducer(finished, { type: 'START', now: T0 + 61_000 })).toBe(finished);
   });
+
+  it('zapamiętuje spóźnienie zakończenia (np. powrót z tła) – do decyzji o dzwonku', () => {
+    const onTime = run(createTimerState({ durationSeconds: 60 }), { type: 'START', now: T0 }, { type: 'TICK', now: T0 + 60_200 });
+    expect(onTime.lateByMs).toBe(200);
+
+    const late = run(createTimerState({ durationSeconds: 60 }), { type: 'START', now: T0 }, { type: 'TICK', now: T0 + 660_000 });
+    expect(late.lateByMs).toBe(600_000);
+
+    const interrupted = run(createTimerState({ durationSeconds: 60 }), { type: 'START', now: T0 }, { type: 'STOP', now: T0 + 5_000 });
+    expect(interrupted.lateByMs).toBeUndefined();
+  });
+
+  it('oferuje 4 pigułki czasu (15 min zastąpione własnym czasem)', () => {
+    expect([...DURATION_PRESETS_SECONDS]).toEqual([60, 180, 300, 600]);
+  });
 });
+
