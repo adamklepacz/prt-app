@@ -206,6 +206,8 @@ function Row({
         value={value}
         onValueChange={onChange}
         trackColor={{ true: colors.sage, false: colors.border }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={colors.border}
         accessibilityLabel={title}
       />
     </View>

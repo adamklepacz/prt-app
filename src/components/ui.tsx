@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   bandRounded: { borderRadius: radius.lg, marginHorizontal: spacing.lg, marginBottom: spacing.lg },
   bandArt: { position: 'absolute', right: -14, top: -16 },
-  bandText: { paddingRight: 110 },
+  bandText: { paddingRight: 96 },
   bandTitle: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 40, color: colors.textOnColor },
   bandSubtitle: { marginTop: 2, fontSize: 14, color: 'rgba(255,255,255,0.88)' },
   bandArrow: {

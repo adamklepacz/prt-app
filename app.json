@@ -7,13 +7,9 @@
     "icon": "./assets/icon.png",
     "scheme": "somatic",
     "userInterfaceStyle": "light",
-    "platforms": ["ios"],
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FAF8F5"
-    },
+    "platforms": [
+      "ios"
+    ],
     "ios": {
       "bundleIdentifier": "com.adamklepacz.prtapp",
       "appleTeamId": "XXXXXXXXXX",

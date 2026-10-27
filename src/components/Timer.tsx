@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { Pill } from './Pill';
 import { ReactionModal, ReactionSelection } from './ReactionModal';
 import { formatClock } from '../domain/dates';
 import { INSCRIPTION_ROTATION_SECONDS, pickRotating, TRACKING_INSCRIPTIONS } from '../domain/messages';
@@ -48,15 +47,21 @@ export function Timer() {
 
   return (
     <View>
-      <View style={styles.pills}>
-        {DURATION_PRESETS_SECONDS.map((seconds) => (
-          <Pill
-            key={seconds}
-            label={`${seconds / 60} min`}
-            selected={state.durationSeconds === seconds}
-            onPress={state.status === 'idle' ? () => selectDuration(seconds) : undefined}
-          />
-        ))}
+      <View style={[styles.durations, isActive && styles.durationsLocked]}>
+        {DURATION_PRESETS_SECONDS.map((seconds) => {
+          const selected = state.durationSeconds === seconds;
+          return (
+            <Pressable
+              key={seconds}
+              onPress={state.status === 'idle' ? () => selectDuration(seconds) : undefined}
+              accessibilityRole="button"
+              accessibilityState={{ selected, disabled: state.status !== 'idle' }}
+              style={[styles.duration, selected && styles.durationSelected]}
+            >
+              <Text style={[styles.durationLabel, selected && styles.durationLabelSelected]}>{`${seconds / 60} min`}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       <View style={styles.ringWrap}>
@@ -150,7 +155,19 @@ function RoundButton({
 }
 
 const styles = StyleSheet.create({
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'center' },
+  durations: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  durationsLocked: { opacity: 0.55 },
+  duration: { flex: 1, paddingVertical: 9, borderRadius: radius.pill, alignItems: 'center' },
+  durationSelected: { backgroundColor: colors.text },
+  durationLabel: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
+  durationLabelSelected: { color: colors.textOnColor },
   ringWrap: {
     alignSelf: 'center',
     width: RING,

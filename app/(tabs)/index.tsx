@@ -38,7 +38,7 @@ export default function TimerScreen() {
 
       <ColorBand
         title="Reset przy biurku"
-        subtitle="60 sekund deeskalacji · bez licznika"
+        subtitle="60 sekund deeskalacji"
         color={colors.sage}
         botanical="willow"
         onPress={() => router.push('/quick-reset')}
