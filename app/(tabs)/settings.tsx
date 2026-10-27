@@ -8,6 +8,7 @@ import { Card, PrimaryButton, Screen, ScreenHeader, SectionLabel } from '../../s
 import { parseBackup } from '../../src/domain/backup';
 import { pickBackupText, shareBackup } from '../../src/services/backupFiles';
 import { syncReminders } from '../../src/services/notifications';
+import { playBell } from '../../src/services/sound';
 import { useTrackingStore } from '../../src/store/trackingStore';
 import { colors, fonts, spacing, type } from '../../src/theme/tokens';
 import { ImportMode } from '../../src/types';
@@ -124,6 +125,16 @@ export default function SettingsScreen() {
           value={settings.hapticsEnabled}
           onChange={(v) => updateSettings({ hapticsEnabled: v })}
         />
+        <View style={styles.divider} />
+        <Row
+          title="Dzwonek misy"
+          subtitle="Delikatny dźwięk, gdy minie czas obserwacji – także przy wyciszonym telefonie"
+          value={settings.bellEnabled !== false}
+          onChange={(v) => {
+            updateSettings({ bellEnabled: v });
+            if (v) playBell();
+          }}
+        />
       </Card>
 
       <SectionLabel>Backup danych</SectionLabel>
@@ -227,6 +238,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   rowText: { flex: 1 },
   rowSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.lg },
   dimmed: { opacity: 0.6 },
   paragraph: { marginBottom: spacing.lg },
   buttons: { gap: spacing.sm },

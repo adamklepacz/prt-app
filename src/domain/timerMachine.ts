@@ -12,6 +12,8 @@ export interface TimerState {
   startedAt: number | null;
   elapsedSeconds: number;
   outcome?: TimerOutcome;
+  /** O ile ms po czasie odnotowano koniec (duże = aplikacja była w tle). Tylko dla ukończonych. */
+  lateByMs?: number;
 }
 
 export type TimerAction =
@@ -23,7 +25,7 @@ export type TimerAction =
   | { type: 'STOP'; now: number }
   | { type: 'RESET' };
 
-export const DURATION_PRESETS_SECONDS = [60, 180, 300, 600, 900] as const;
+export const DURATION_PRESETS_SECONDS = [60, 180, 300, 600] as const;
 export const QUICK_RESET_SECONDS = 60;
 
 export function createTimerState({
@@ -72,6 +74,7 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
           ...state,
           status: 'finished',
           outcome: 'completed',
+          lateByMs: ms - state.durationSeconds * 1000,
           accumulatedMs: state.durationSeconds * 1000,
           startedAt: null,
           elapsedSeconds: state.durationSeconds,

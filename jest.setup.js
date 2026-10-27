@@ -29,3 +29,9 @@ jest.mock('lucide-react-native', () => {
 
 // Safe area bez natywnego providera.
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+
+// Odtwarzanie dźwięku (dzwonek) – bez natywnego modułu audio.
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: jest.fn(() => ({ play: jest.fn(), seekTo: jest.fn(() => Promise.resolve()), remove: jest.fn(), volume: 1 })),
+  setAudioModeAsync: jest.fn(() => Promise.resolve()),
+}));

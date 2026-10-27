@@ -21,12 +21,17 @@ export interface AppSettings {
   remindersEnabled: boolean;
   reminderTimes: string[]; // np. ["10:00", "14:00", "17:00"]
   hapticsEnabled: boolean;
+  /** Dzwonek misy na koniec obserwacji (Somatic Tracking). */
+  bellEnabled: boolean;
+  /** Ostatnio ustawiony własny czas obserwacji w minutach (pigułka „···”). */
+  customTrackingMinutes?: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   remindersEnabled: false,
   reminderTimes: ['10:00', '14:00', '17:00'],
   hapticsEnabled: true,
+  bellEnabled: true,
 };
 
 /** Dane potrzebne do zapisania sesji – id i createdAt nadaje store. */

@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { createBackup, parseBackup } from '../domain/backup';
 import { isValidTimeOfDay } from '../domain/dates';
+import { isValidCustomMinutes } from '../domain/durations';
 import {
   computeTotals,
   computeWeeklyStats,
@@ -99,6 +100,9 @@ export function createTrackingStore(deps: TrackingStoreDeps = {}) {
     updateSettings: (patch) => {
       const next: AppSettings = { ...get().settings, ...patch };
       if (patch.reminderTimes) next.reminderTimes = normalizeReminderTimes(patch.reminderTimes);
+      if (patch.customTrackingMinutes !== undefined && !isValidCustomMinutes(patch.customTrackingMinutes)) {
+        throw new Error('Własny czas obserwacji musi mieć od 1 do 120 minut.');
+      }
       set({ settings: next });
     },
 
@@ -138,9 +142,30 @@ export function createTrackingStore(deps: TrackingStoreDeps = {}) {
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ sessions: state.sessions, settings: state.settings }),
+      // Nowe pola ustawień (np. bellEnabled) dostają wartości domyślne przy danych z poprzednich wersji.
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<Pick<TrackingState, 'sessions' | 'settings'>>;
+        return {
+          ...current,
+          ...saved,
+          settings: { ...current.settings, ...(saved.settings ?? {}) },
+        };
+      },
     }),
   );
 }
 
 /** Globalny store aplikacji (persistowany w AsyncStorage, 100% offline). */
 export const useTrackingStore = createTrackingStore();
+
+/** Wywołuje callback, gdy dane z AsyncStorage są już wczytane (od razu, jeśli już są). */
+export function onTrackingStoreHydrated(callback: () => void): () => void {
+  const api = (useTrackingStore as unknown as {
+    persist?: { hasHydrated: () => boolean; onFinishHydration: (cb: () => void) => () => void };
+  }).persist;
+  if (!api || api.hasHydrated()) {
+    callback();
+    return () => undefined;
+  }
+  return api.onFinishHydration(callback);
+}

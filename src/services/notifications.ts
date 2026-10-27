@@ -1,10 +1,10 @@
 import * as Notifications from 'expo-notifications';
 
-const REMINDER_PREFIX = 'reminder-';
+import { REMINDER_ID_PREFIX as REMINDER_PREFIX } from '../domain/notificationRouting';
 
 const REMINDER_BODIES = [
-  'Minuta dla układu nerwowego. Opuść barki i po prostu poobserwuj.',
-  'Krótki reset? Rozluźnij żuchwę, wydłuż wydech.',
+  'Chwila dla układu nerwowego: reset przy biurku czy dłuższa obserwacja?',
+  'Opuść barki. Masz minutę – albo dziesięć?',
   'Zajrzyj do ciała z ciekawością – bez naprawiania.',
 ];
 
@@ -24,10 +24,10 @@ export function configureNotificationHandler() {
   });
 }
 
-export async function ensureNotificationPermission(): Promise<boolean> {
+export async function ensureNotificationPermission({ prompt = true }: { prompt?: boolean } = {}): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
-  if (!current.canAskAgain) return false;
+  if (!prompt || !current.canAskAgain) return false;
   const requested = await Notifications.requestPermissionsAsync({
     ios: { allowAlert: true, allowSound: true, allowBadge: false },
   });
@@ -44,10 +44,14 @@ async function cancelReminders() {
 }
 
 /** Synchronizuje codzienne przypomnienia z ustawieniami. Zwraca false, gdy brak zgody. */
-export async function syncReminders(enabled: boolean, times: string[]): Promise<boolean> {
+export async function syncReminders(
+  enabled: boolean,
+  times: string[],
+  { prompt = true }: { prompt?: boolean } = {},
+): Promise<boolean> {
   await cancelReminders();
   if (!enabled || times.length === 0) return true;
-  if (!(await ensureNotificationPermission())) return false;
+  if (!(await ensureNotificationPermission({ prompt }))) return false;
 
   await Promise.all(
     times.map((time, index) => {
@@ -57,7 +61,7 @@ export async function syncReminders(enabled: boolean, times: string[]): Promise<
         content: {
           title: 'Somatic',
           body: REMINDER_BODIES[index % REMINDER_BODIES.length],
-          data: { url: 'somatic://quick-reset' },
+          data: { target: 'home' },
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
       });

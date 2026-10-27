@@ -3,20 +3,31 @@ import { AppState } from 'react-native';
 
 import { createTimerState, remainingSeconds, TimerMode, timerReducer, TimerState } from '../domain/timerMachine';
 import { haptics } from '../services/haptics';
+import { playBell, preloadBell } from '../services/sound';
 import { cancelTimerEndNotification, scheduleTimerEndNotification } from '../services/timerNotifications';
 import { useTrackingStore } from '../store/trackingStore';
 
 const TICK_MS = 250;
+/** Koniec odnotowany później (aplikacja była w tle) – wtedy dzwonił już system, nie dublujemy. */
+const LIVE_FINISH_TOLERANCE_MS = 3000;
 
 export interface UseTimerOptions {
   durationSeconds: number;
   mode?: TimerMode;
   autoStart?: boolean;
+  /** Dzwonek misy na koniec (Somatic Tracking). Reset przy biurku kończy się samą haptyką. */
+  bell?: boolean;
 }
 
-export function useTimer({ durationSeconds, mode = 'standard', autoStart = false }: UseTimerOptions) {
+export function useTimer({ durationSeconds, mode = 'standard', autoStart = false, bell = false }: UseTimerOptions) {
   const [state, dispatch] = useReducer(timerReducer, { durationSeconds, mode }, createTimerState);
   const hapticsEnabled = useTrackingStore((s) => s.settings.hapticsEnabled);
+  const bellEnabled = useTrackingStore((s) => s.settings.bellEnabled !== false);
+  const withBell = bell && bellEnabled;
+
+  useEffect(() => {
+    if (withBell) preloadBell();
+  }, [withBell]);
 
   const prevStatus = useRef<TimerState['status']>(state.status);
   const notificationRef = useRef<Promise<string | null> | null>(null);
@@ -48,12 +59,16 @@ export function useTimer({ durationSeconds, mode = 'standard', autoStart = false
 
     if (state.status === 'running') {
       if (prev === 'idle' && hapticsEnabled) haptics.start();
-      notificationRef.current = scheduleTimerEndNotification(remainingSeconds(state));
+      notificationRef.current = scheduleTimerEndNotification(remainingSeconds(state), { bell: withBell });
     }
     if (state.status === 'paused' || state.status === 'idle') cancelNotification();
     if (state.status === 'finished') {
       cancelNotification();
-      if (state.outcome === 'completed' && hapticsEnabled) haptics.finished();
+      const live = (state.lateByMs ?? 0) < LIVE_FINISH_TOLERANCE_MS;
+      if (state.outcome === 'completed' && live) {
+        if (hapticsEnabled) haptics.finished();
+        if (withBell) playBell();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);

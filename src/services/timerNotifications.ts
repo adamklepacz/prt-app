@@ -5,12 +5,23 @@ import * as Notifications from 'expo-notifications';
  * Lokalne powiadomienie delikatnie informuje o końcu sesji (bez dźwięku alarmu).
  * Jeśli użytkownik nie dał zgody na powiadomienia – po prostu nic się nie dzieje.
  */
-export async function scheduleTimerEndNotification(seconds: number): Promise<string | null> {
+export const BELL_SOUND_FILE = 'bell.wav';
+
+export async function scheduleTimerEndNotification(
+  seconds: number,
+  { bell }: { bell: boolean } = { bell: false },
+): Promise<string | null> {
   try {
     const { granted } = await Notifications.getPermissionsAsync();
     if (!granted || seconds < 1) return null;
     return await Notifications.scheduleNotificationAsync({
-      content: { title: 'Sesja zakończona', body: 'Zajrzyj, jak zareagował układ nerwowy.', sound: false },
+      identifier: `timer-end-${Date.now()}`,
+      content: {
+        title: 'Sesja zakończona',
+        body: 'Zajrzyj, jak zareagował układ nerwowy.',
+        // Ten sam dzwonek misy, gdy telefon jest zablokowany (plik dołączany przez plugin expo-notifications).
+        sound: bell ? BELL_SOUND_FILE : false,
+      },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: Math.round(seconds) },
     });
   } catch {

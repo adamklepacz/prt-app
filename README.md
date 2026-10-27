@@ -8,10 +8,10 @@ Zasady: dane w 100% lokalne i offline, bez logowania. Zero presji, zero czerwony
 
 | Zakładka | Co jest w środku |
 | --- | --- |
-| **Timer** | Kafel „Reset przy biurku (60 s)”: pełny ekran bez licznika, rotacyjne komunikaty, oddychające koła, haptyka po 60 s, potem ocena reakcji. Standardowy timer 1/3/5/10/15 min z pauzą, rotacyjnymi inskrypcjami i zapisem sesji przerwanych. |
+| **Timer** | Kafel „Reset przy biurku (60 s)”: pełny ekran bez licznika, rotacyjne komunikaty, oddychające koła, haptyka po 60 s, potem ocena reakcji. Standardowy timer 1/3/5/10 min albo **własny czas „···”** (1–120 min), z pauzą, rotacyjnymi inskrypcjami, **dzwonkiem misy tybetańskiej** na koniec (także przy zablokowanym telefonie) i zapisem sesji przerwanych. |
 | **Reakcje** | Łączna liczba sesji i minut, % spokoju w tygodniu, wykres 7 dni segmentowany wg reakcji (spokój / zniecierpliwienie / walka), filtry i historia. Przytrzymanie sesji usuwa ją. |
 | **Wiedza** | Trzy sekcje: Mindset (Somatic Tracking, czego unikać, błąd predykcji), Nurty (1. i 2. poziom psychoterapii i miejsce PRT), Sensytyzacja ośrodkowa. |
-| **Ustawienia** | Codzienne przypomnienia o dowolnych godzinach co do minuty (do 12, natywny wybór czasu iOS, `expo-notifications`), haptyka, eksport JSON (`expo-sharing`: AirDrop, Pliki), import JSON z walidacją (tryby „Zastąp” i „Połącz”), instrukcja dodania widgetu. |
+| **Ustawienia** | Dzwonek misy (wł./wył.). Codzienne przypomnienia (dotknięcie otwiera ekran główny) o dowolnych godzinach co do minuty (do 12, natywny wybór czasu iOS, `expo-notifications`), haptyka, eksport JSON (`expo-sharing`: AirDrop, Pliki), import JSON z walidacją (tryby „Zastąp” i „Połącz”), instrukcja dodania widgetu. |
 
 ## Stack
 
@@ -39,7 +39,8 @@ src/
   services/               # haptics, notifications, timerNotifications, backupFiles
   content/knowledge.ts    # treści bazy wiedzy
 targets/widget/           # WidgetKit (SwiftUI) + expo-target.config.js
-scripts/generate-assets.ts
+scripts/generate-assets.ts  # ikona i splash
+scripts/generate-bell.py    # syntetyczny dzwonek misy (assets/sounds/bell.wav)
 ```
 
 ## TDD i testy

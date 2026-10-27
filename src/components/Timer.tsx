@@ -1,11 +1,13 @@
 import { Pause, Play, Square } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { CustomDurationSheet } from './CustomDurationSheet';
 import { ReactionModal, ReactionSelection } from './ReactionModal';
 import { formatClock } from '../domain/dates';
 import { INSCRIPTION_ROTATION_SECONDS, pickRotating, TRACKING_INSCRIPTIONS } from '../domain/messages';
+import { isPresetDuration } from '../domain/durations';
 import { DURATION_PRESETS_SECONDS, progress } from '../domain/timerMachine';
 import { useTimer } from '../hooks/useTimer';
 import { useTrackingStore } from '../store/trackingStore';
@@ -18,8 +20,27 @@ const CIRC = 2 * Math.PI * R;
 
 /** Standardowy timer Somatic Tracking: pigułki czasu, pierścień postępu, rotacyjne inskrypcje. */
 export function Timer() {
-  const { state, remaining, start, pause, resume, stop, reset, selectDuration } = useTimer({ durationSeconds: 60 });
+  const { state, remaining, start, pause, resume, stop, reset, selectDuration } = useTimer({
+    durationSeconds: 60,
+    bell: true,
+  });
   const addSession = useTrackingStore((s) => s.addSession);
+  const customMinutes = useTrackingStore((s) => s.settings.customTrackingMinutes);
+  const updateSettings = useTrackingStore((s) => s.updateSettings);
+  const [customOpen, setCustomOpen] = useState(false);
+
+  const customSelected = !isPresetDuration(state.durationSeconds);
+  const customLabel = customSelected
+    ? `${state.durationSeconds / 60} min`
+    : customMinutes
+      ? `${customMinutes} min`
+      : '···';
+
+  const applyCustom = (minutes: number) => {
+    updateSettings({ customTrackingMinutes: minutes });
+    selectDuration(minutes * 60);
+    setCustomOpen(false);
+  };
 
   const isActive = state.status === 'running' || state.status === 'paused';
   const showModal = state.status === 'finished' && state.elapsedSeconds >= 1;
@@ -62,6 +83,15 @@ export function Timer() {
             </Pressable>
           );
         })}
+        <Pressable
+          onPress={state.status === 'idle' ? () => setCustomOpen(true) : undefined}
+          accessibilityRole="button"
+          accessibilityLabel="Własny czas"
+          accessibilityState={{ selected: customSelected, disabled: state.status !== 'idle' }}
+          style={[styles.duration, customSelected && styles.durationSelected]}
+        >
+          <Text style={[styles.durationLabel, customSelected && styles.durationLabelSelected]}>{customLabel}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.ringWrap}>
@@ -111,6 +141,13 @@ export function Timer() {
           </>
         )}
       </View>
+
+      <CustomDurationSheet
+        visible={customOpen}
+        initialMinutes={customSelected ? state.durationSeconds / 60 : customMinutes}
+        onSubmit={applyCustom}
+        onCancel={() => setCustomOpen(false)}
+      />
 
       <ReactionModal
         visible={showModal}

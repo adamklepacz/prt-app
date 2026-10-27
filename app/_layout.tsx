@@ -11,7 +11,9 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { configureNotificationHandler } from '../src/services/notifications';
+import { notificationTarget } from '../src/domain/notificationRouting';
+import { configureNotificationHandler, syncReminders } from '../src/services/notifications';
+import { onTrackingStoreHydrated, useTrackingStore } from '../src/store/trackingStore';
 import { colors } from '../src/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -54,9 +56,10 @@ function useNotificationDeepLinks() {
       console.warn('Notification handler', e);
     }
 
+    // Przypomnienie → ekran główny (wybór: reset przy biurku albo dłuższa obserwacja).
     const open = (response: Notifications.NotificationResponse | null | undefined) => {
-      const url = response?.notification?.request?.content?.data?.url;
-      if (typeof url === 'string' && url.includes('quick-reset')) router.push('/quick-reset');
+      const identifier = response?.notification?.request?.identifier;
+      if (identifier && notificationTarget(identifier) === 'home') router.navigate('/');
     };
 
     let sub: { remove: () => void } | undefined;
@@ -66,7 +69,16 @@ function useNotificationDeepLinks() {
     } catch (e) {
       console.warn('Notification listener', e);
     }
-    return () => sub?.remove();
+    // Ciche odświeżenie zaplanowanych przypomnień (np. nowe treści po aktualizacji) – bez pytania o zgodę.
+    const unsubscribe = onTrackingStoreHydrated(() => {
+      const { remindersEnabled, reminderTimes } = useTrackingStore.getState().settings;
+      syncReminders(remindersEnabled, reminderTimes, { prompt: false }).catch(() => undefined);
+    });
+
+    return () => {
+      sub?.remove();
+      unsubscribe();
+    };
   }, []);
 }
 

@@ -1,4 +1,5 @@
 import { isValidIsoDate, isValidTimeOfDay } from './dates';
+import { isValidCustomMinutes, MAX_CUSTOM_MINUTES, MIN_CUSTOM_MINUTES } from './durations';
 import { isValidDuration, MAX_NOTE_LENGTH, sortNewestFirst } from './sessions';
 import {
   AppSettings,
@@ -45,6 +46,14 @@ function validateSettings(value: unknown): string[] {
   if (typeof value.hapticsEnabled !== 'boolean') errors.push('settings.hapticsEnabled: wymagana wartość logiczna');
   if (!Array.isArray(value.reminderTimes) || !value.reminderTimes.every(isValidTimeOfDay)) {
     errors.push('settings.reminderTimes: wymagana lista godzin w formacie HH:MM');
+  }
+  if (value.bellEnabled !== undefined && typeof value.bellEnabled !== 'boolean') {
+    errors.push('settings.bellEnabled: opcjonalna wartość logiczna');
+  }
+  if (value.customTrackingMinutes !== undefined && !isValidCustomMinutes(value.customTrackingMinutes)) {
+    errors.push(
+      `settings.customTrackingMinutes: opcjonalna liczba całkowita ${MIN_CUSTOM_MINUTES}–${MAX_CUSTOM_MINUTES}`,
+    );
   }
   return errors;
 }
@@ -95,11 +104,14 @@ function pickSession(raw: UnknownRecord): TrackingSession {
 }
 
 function pickSettings(raw: UnknownRecord): AppSettings {
-  return {
+  const settings: AppSettings = {
     remindersEnabled: raw.remindersEnabled as boolean,
     hapticsEnabled: raw.hapticsEnabled as boolean,
     reminderTimes: [...new Set(raw.reminderTimes as string[])].sort(),
+    bellEnabled: typeof raw.bellEnabled === 'boolean' ? raw.bellEnabled : true,
   };
+  if (isValidCustomMinutes(raw.customTrackingMinutes)) settings.customTrackingMinutes = raw.customTrackingMinutes;
+  return settings;
 }
 
 export type ParseResult = { ok: true; backup: BackupFile } | { ok: false; errors: string[] };

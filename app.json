@@ -36,7 +36,17 @@
         "expo-notifications",
         {
           "color": "#5E715D",
-          "enableRemoteNotifications": false
+          "enableRemoteNotifications": false,
+          "sounds": [
+            "./assets/sounds/bell.wav"
+          ]
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": false
         }
       ],
       "@bacons/apple-targets"
