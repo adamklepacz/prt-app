@@ -1,0 +1,19 @@
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+expo-env.d.ts
+
+# Generowane przez `expo prebuild` (Continuous Native Generation)
+/ios
+/android
+
+# macOS / IDE
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Lokalny runner weryfikacyjny (nie jest częścią aplikacji)
+/.verify-out/
