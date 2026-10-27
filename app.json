@@ -12,7 +12,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.adamklepacz.prtapp",
-      "appleTeamId": "XXXXXXXXXX",
+      "appleTeamId": "6MV2UZSC96",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

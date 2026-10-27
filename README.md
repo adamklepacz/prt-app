@@ -73,7 +73,7 @@ Pokrycie: `src/domain` ~94%, `src/store` ~96%, `Timer` / `QuickReset` / `useTime
 
 **Wymagania:** macOS z aktualnym Xcode (z App Store), CocoaPods ≥ 1.16.2, Node LTS i iPhone z włączonym **Trybem dewelopera** (Ustawienia → Prywatność i ochrona → Tryb dewelopera).
 
-1. **Ustaw Team ID** w `app.json` → `expo.ios.appleTeamId` (teraz jest tam placeholder `XXXXXXXXXX`). Znajdziesz go w Xcode → Settings → Accounts albo na developer.apple.com → Membership. Jeśli używasz darmowego konta Apple, zmień też `bundleIdentifier` na unikalny.
+1. **Ustaw Team ID** w `app.json` → `expo.ios.appleTeamId` (ustawiony: `6MV2UZSC96`; zmień, jeśli budujesz innym kontem). Znajdziesz go w Xcode → Settings → Accounts albo na developer.apple.com → Membership. Jeśli używasz darmowego konta Apple, zmień też `bundleIdentifier` na unikalny.
 2. Zainstaluj zależności i wygeneruj projekt natywny:
    ```bash
    npm install
