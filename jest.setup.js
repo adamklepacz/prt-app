@@ -26,3 +26,6 @@ jest.mock('lucide-react-native', () => {
   const Stub = () => null;
   return new Proxy({ __esModule: true }, { get: (t, k) => (k in t ? t[k] : Stub) });
 });
+
+// Safe area bez natywnego providera.
+jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
