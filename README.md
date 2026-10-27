@@ -88,6 +88,8 @@ Pokrycie: `src/domain` ~94%, `src/store` ~96%, `Timer` / `QuickReset` / `useTime
    Wersja działająca bez Metro: `npx expo run:ios --device --configuration Release`.
 5. Przy pierwszym uruchomieniu iOS może zablokować dewelopera. Odblokujesz go w Ustawienia → Ogólne → VPN i urządzenia → Twój profil → Ufaj.
 
+> Aplikacja używa wyłącznie lokalnych powiadomień (`enableRemoteNotifications: false`), więc nie potrzebuje uprawnienia Push Notifications. Dzięki temu można ją podpisać darmowym „Personal Team”.
+
 ### Widget
 
 - **Ekran początkowy:** przytrzymaj tło → Edytuj → Dodaj widżet → „Somatic” (mały lub średni).

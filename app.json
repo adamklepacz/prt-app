@@ -35,7 +35,8 @@
       [
         "expo-notifications",
         {
-          "color": "#5E715D"
+          "color": "#5E715D",
+          "enableRemoteNotifications": false
         }
       ],
       "@bacons/apple-targets"
