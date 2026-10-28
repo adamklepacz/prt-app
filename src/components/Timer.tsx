@@ -9,6 +9,7 @@ import { formatClock } from '../domain/dates';
 import { INSCRIPTION_ROTATION_SECONDS, pickRotating, TRACKING_INSCRIPTIONS } from '../domain/messages';
 import { isPresetDuration } from '../domain/durations';
 import { DURATION_PRESETS_SECONDS, progress } from '../domain/timerMachine';
+import { useAppActiveSettled } from '../hooks/useAppActiveSettled';
 import { useTimer } from '../hooks/useTimer';
 import { useTrackingStore } from '../store/trackingStore';
 import { colors, fonts, radius, shadow, spacing, type } from '../theme/tokens';
@@ -23,7 +24,9 @@ export function Timer() {
   const { state, remaining, start, pause, resume, stop, reset, selectDuration } = useTimer({
     durationSeconds: 60,
     bell: true,
+    persist: true,
   });
+  const appSettled = useAppActiveSettled();
   const addSession = useTrackingStore((s) => s.addSession);
   const customMinutes = useTrackingStore((s) => s.settings.customTrackingMinutes);
   const updateSettings = useTrackingStore((s) => s.updateSettings);
@@ -150,7 +153,7 @@ export function Timer() {
       />
 
       <ReactionModal
-        visible={showModal}
+        visible={showModal && appSettled}
         outcome={state.outcome ?? 'completed'}
         elapsedSeconds={state.elapsedSeconds}
         onSave={handleSave}

@@ -233,7 +233,7 @@ describe('<Timer /> – dzwonek na koniec obserwacji', () => {
     await render(<Timer />);
     await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
 
-    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: true });
+    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: true, mode: 'standard' });
   });
 
   it('nie gra dzwonka przy przerwanej sesji', async () => {
@@ -252,7 +252,7 @@ describe('<Timer /> – dzwonek na koniec obserwacji', () => {
     await advance(60_000);
 
     expect(playBell).not.toHaveBeenCalled();
-    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: false });
+    expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: false, mode: 'standard' });
   });
 });
 

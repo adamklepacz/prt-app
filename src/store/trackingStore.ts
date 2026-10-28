@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
 import { create, StateCreator } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { createBackup, parseBackup } from '../domain/backup';
 import { isValidTimeOfDay } from '../domain/dates';
 import { isValidCustomMinutes } from '../domain/durations';
+import { TimerState } from '../domain/timerMachine';
 import {
   computeTotals,
   computeWeeklyStats,
@@ -29,7 +31,10 @@ import {
 export interface TrackingState {
   sessions: TrackingSession[];
   settings: AppSettings;
+  /** Trwająca / zakończona-niezapisana sesja timera – przetrwa zamknięcie aplikacji przez iOS. */
+  activeTimer: TimerState | null;
 
+  setActiveTimer: (timer: TimerState | null) => void;
   addSession: (input: NewSessionInput) => TrackingSession;
   removeSession: (id: string) => void;
   clearAll: () => void;
@@ -69,6 +74,9 @@ export function createTrackingStore(deps: TrackingStoreDeps = {}) {
   const creator: StateCreator<TrackingState> = (set, get) => ({
     sessions: [],
     settings: { ...DEFAULT_SETTINGS, reminderTimes: [...DEFAULT_SETTINGS.reminderTimes] },
+    activeTimer: null,
+
+    setActiveTimer: (timer) => set({ activeTimer: timer }),
 
     addSession: (input) => {
       if (!isValidDuration(input.durationSeconds)) {
@@ -141,10 +149,10 @@ export function createTrackingStore(deps: TrackingStoreDeps = {}) {
       name: deps.storageKey ?? STORAGE_KEY,
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ sessions: state.sessions, settings: state.settings }),
+      partialize: (state) => ({ sessions: state.sessions, settings: state.settings, activeTimer: state.activeTimer }),
       // Nowe pola ustawień (np. bellEnabled) dostają wartości domyślne przy danych z poprzednich wersji.
       merge: (persisted, current) => {
-        const saved = (persisted ?? {}) as Partial<Pick<TrackingState, 'sessions' | 'settings'>>;
+        const saved = (persisted ?? {}) as Partial<Pick<TrackingState, 'sessions' | 'settings' | 'activeTimer'>>;
         return {
           ...current,
           ...saved,
@@ -168,4 +176,17 @@ export function onTrackingStoreHydrated(callback: () => void): () => void {
     return () => undefined;
   }
   return api.onFinishHydration(callback);
+}
+
+/** true, gdy dane z AsyncStorage są wczytane – dopiero wtedy wolno przywracać i zapisywać stan timera. */
+export function useTrackingStoreHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(() => {
+    const api = (useTrackingStore as unknown as { persist?: { hasHydrated: () => boolean } }).persist;
+    return !api || api.hasHydrated();
+  });
+  useEffect(() => {
+    if (hydrated) return undefined;
+    return onTrackingStoreHydrated(() => setHydrated(true));
+  }, [hydrated]);
+  return hydrated;
 }

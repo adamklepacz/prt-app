@@ -23,7 +23,9 @@ export type TimerAction =
   | { type: 'RESUME'; now: number }
   | { type: 'TICK'; now: number }
   | { type: 'STOP'; now: number }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  /** Przywrócenie zapisanej sesji po ponownym uruchomieniu aplikacji (np. iOS zamknął ją w tle). */
+  | { type: 'RESTORE'; state: TimerState; now: number };
 
 export const DURATION_PRESETS_SECONDS = [60, 180, 300, 600] as const;
 export const QUICK_RESET_SECONDS = 60;
@@ -99,6 +101,14 @@ export function timerReducer(state: TimerState, action: TimerAction): TimerState
 
     case 'RESET':
       return createTimerState({ durationSeconds: state.durationSeconds, mode: state.mode });
+
+    case 'RESTORE': {
+      if (state.status !== 'idle' || action.state.status === 'idle') return state;
+      // Sesja biegnąca: dociągamy czas do „teraz” – jeśli minęła, kończy się jako ukończona (z lateByMs).
+      return action.state.status === 'running'
+        ? timerReducer(action.state, { type: 'TICK', now: action.now })
+        : action.state;
+    }
 
     default:
       return state;

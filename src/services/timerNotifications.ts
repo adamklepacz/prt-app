@@ -1,5 +1,8 @@
 import * as Notifications from 'expo-notifications';
 
+import { TIMER_END_ID_PREFIX } from '../domain/notificationRouting';
+import { TimerMode } from '../domain/timerMachine';
+
 /**
  * Gdy telefon zostanie zablokowany w trakcie dłuższej obserwacji, JS jest wstrzymany.
  * Lokalne powiadomienie delikatnie informuje o końcu sesji (bez dźwięku alarmu).
@@ -7,15 +10,18 @@ import * as Notifications from 'expo-notifications';
  */
 export const BELL_SOUND_FILE = 'bell.wav';
 
+/** Stały identyfikator na tryb: ponowne zaplanowanie zastępuje stare, a anulowanie działa też po restarcie aplikacji. */
+export const timerEndNotificationId = (mode: TimerMode) => `${TIMER_END_ID_PREFIX}-${mode}`;
+
 export async function scheduleTimerEndNotification(
   seconds: number,
-  { bell }: { bell: boolean } = { bell: false },
+  { bell, mode = 'standard' }: { bell: boolean; mode?: TimerMode } = { bell: false },
 ): Promise<string | null> {
   try {
     const { granted } = await Notifications.getPermissionsAsync();
     if (!granted || seconds < 1) return null;
     return await Notifications.scheduleNotificationAsync({
-      identifier: `timer-end-${Date.now()}`,
+      identifier: timerEndNotificationId(mode),
       content: {
         title: 'Sesja zakończona',
         body: 'Zajrzyj, jak zareagował układ nerwowy.',
@@ -29,10 +35,9 @@ export async function scheduleTimerEndNotification(
   }
 }
 
-export async function cancelTimerEndNotification(id: string | null): Promise<void> {
-  if (!id) return;
+export async function cancelTimerEndNotification(mode: TimerMode): Promise<void> {
   try {
-    await Notifications.cancelScheduledNotificationAsync(id);
+    await Notifications.cancelScheduledNotificationAsync(timerEndNotificationId(mode));
   } catch {
     // ignorujemy – powiadomienie mogło już zostać dostarczone
   }

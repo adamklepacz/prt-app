@@ -8,6 +8,7 @@ import { BreathingCircle } from './BreathingCircle';
 import { ReactionModal, ReactionSelection } from './ReactionModal';
 import { pickRotating, QUICK_RESET_MESSAGES, QUICK_RESET_ROTATION_SECONDS } from '../domain/messages';
 import { QUICK_RESET_SECONDS } from '../domain/timerMachine';
+import { useAppActiveSettled } from '../hooks/useAppActiveSettled';
 import { useTimer } from '../hooks/useTimer';
 import { useTrackingStore } from '../store/trackingStore';
 import { colors, fonts, radius, spacing } from '../theme/tokens';
@@ -20,6 +21,7 @@ export function QuickReset({ onDone }: { onDone: () => void }) {
   const insets = useSafeAreaInsets();
   const { state, stop } = useTimer({ durationSeconds: QUICK_RESET_SECONDS, mode: 'quickReset', autoStart: true });
   const addSession = useTrackingStore((s) => s.addSession);
+  const appSettled = useAppActiveSettled();
 
   const finished = state.status === 'finished';
 
@@ -67,7 +69,7 @@ export function QuickReset({ onDone }: { onDone: () => void }) {
       </Text>
 
       <ReactionModal
-        visible={finished && state.elapsedSeconds >= 1}
+        visible={finished && state.elapsedSeconds >= 1 && appSettled}
         outcome={state.outcome ?? 'completed'}
         elapsedSeconds={state.elapsedSeconds}
         onSave={handleSave}
