@@ -238,6 +238,27 @@ describe('trackingStore – filtrowanie historii', () => {
   });
 });
 
+describe('trackingStore – aktywna sesja timera', () => {
+  it('przechowuje i czyści stan trwającej sesji', () => {
+    const { store } = makeStore();
+    expect(store.getState().activeTimer).toBeNull();
+
+    const timer = {
+      status: 'running' as const,
+      mode: 'standard' as const,
+      durationSeconds: 600,
+      accumulatedMs: 0,
+      startedAt: 1_000,
+      elapsedSeconds: 0,
+    };
+    store.getState().setActiveTimer(timer);
+    expect(store.getState().activeTimer).toEqual(timer);
+
+    store.getState().setActiveTimer(null);
+    expect(store.getState().activeTimer).toBeNull();
+  });
+});
+
 describe('trackingStore – ustawienia', () => {
   it('aktualizuje ustawienia częściowo', () => {
     const { store } = makeStore();

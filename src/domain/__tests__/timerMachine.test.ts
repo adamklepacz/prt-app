@@ -112,5 +112,41 @@ describe('timerMachine – przejścia stanów', () => {
   it('oferuje 4 pigułki czasu (15 min zastąpione własnym czasem)', () => {
     expect([...DURATION_PRESETS_SECONDS]).toEqual([60, 180, 300, 600]);
   });
+
+  describe('RESTORE – przywrócenie sesji po ponownym uruchomieniu aplikacji', () => {
+    const running = run(createTimerState({ durationSeconds: 600 }), { type: 'START', now: T0 });
+
+    it('sesja, która skończyła się, gdy aplikacja była zamknięta, wraca jako ukończona (po czasie)', () => {
+      const restored = timerReducer(createTimerState({ durationSeconds: 60 }), {
+        type: 'RESTORE',
+        state: running,
+        now: T0 + 11 * 60_000,
+      });
+      expect(restored).toMatchObject({ status: 'finished', outcome: 'completed', elapsedSeconds: 600, durationSeconds: 600 });
+      expect(restored.lateByMs).toBe(60_000);
+    });
+
+    it('sesja jeszcze trwająca wraca jako biegnąca z poprawnym upływem czasu', () => {
+      const restored = timerReducer(createTimerState({ durationSeconds: 60 }), {
+        type: 'RESTORE',
+        state: running,
+        now: T0 + 4 * 60_000,
+      });
+      expect(restored).toMatchObject({ status: 'running', elapsedSeconds: 240 });
+    });
+
+    it('pauza i zakończona-niezapisana sesja wracają bez zmian', () => {
+      const paused = timerReducer(running, { type: 'PAUSE', now: T0 + 30_000 });
+      expect(timerReducer(createTimerState({ durationSeconds: 60 }), { type: 'RESTORE', state: paused, now: T0 + 999_000 })).toEqual(paused);
+
+      const stopped = timerReducer(running, { type: 'STOP', now: T0 + 30_000 });
+      expect(timerReducer(createTimerState({ durationSeconds: 60 }), { type: 'RESTORE', state: stopped, now: T0 + 999_000 })).toEqual(stopped);
+    });
+
+    it('nie nadpisuje sesji, która już trwa', () => {
+      const current = run(createTimerState({ durationSeconds: 60 }), { type: 'START', now: T0 });
+      expect(timerReducer(current, { type: 'RESTORE', state: running, now: T0 + 1 })).toBe(current);
+    });
+  });
 });
 

@@ -6,8 +6,12 @@ describe('notificationTarget – dokąd prowadzi dotknięcie powiadomienia', () 
     expect(notificationTarget('reminder-07:43')).toBe('home');
   });
 
-  it('powiadomienie o końcu sesji nie zmienia ekranu', () => {
-    expect(notificationTarget('timer-end')).toBeNull();
+  it('powiadomienie o końcu sesji prowadzi do timera (tam czeka ocena reakcji)', () => {
+    expect(notificationTarget('timer-end')).toBe('home');
+    expect(notificationTarget('timer-end-1761650000000')).toBe('home');
+  });
+
+  it('nieznane powiadomienia nie zmieniają ekranu', () => {
     expect(notificationTarget('8f3a-uuid')).toBeNull();
   });
 

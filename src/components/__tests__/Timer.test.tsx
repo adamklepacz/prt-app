@@ -25,6 +25,7 @@ beforeEach(() => {
   jest.setSystemTime(new Date(2026, 9, 27, 12, 0, 0));
   jest.clearAllMocks();
   useTrackingStore.setState({
+    activeTimer: null,
     sessions: [],
     settings: { ...DEFAULT_SETTINGS, reminderTimes: [...DEFAULT_SETTINGS.reminderTimes] },
   });
@@ -252,6 +253,79 @@ describe('<Timer /> – dzwonek na koniec obserwacji', () => {
 
     expect(playBell).not.toHaveBeenCalled();
     expect(scheduleTimerEndNotification).toHaveBeenCalledWith(60, { bell: false });
+  });
+});
+
+describe('<Timer /> – sesja przetrwa zamknięcie aplikacji przez iOS', () => {
+  it('zapisuje trwającą sesję w pamięci trwałej i czyści ją po zapisaniu obserwacji', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    expect(useTrackingStore.getState().activeTimer).toMatchObject({ status: 'running', durationSeconds: 60 });
+
+    await advance(60_000);
+    expect(useTrackingStore.getState().activeTimer).toMatchObject({ status: 'finished', outcome: 'completed' });
+
+    await fireEvent.press(screen.getByText('Spokojna obserwacja'));
+    await fireEvent.press(screen.getByText('Zapisz obserwację'));
+    expect(useTrackingStore.getState().activeTimer).toBeNull();
+  });
+
+  it('scenariusz z iPhone’a: 10 min, telefon zablokowany, iOS zamyka aplikację – po otwarciu czeka ocena reakcji', async () => {
+    const now = Date.now();
+    useTrackingStore.setState({
+      activeTimer: {
+        status: 'running',
+        mode: 'standard',
+        durationSeconds: 600,
+        accumulatedMs: 0,
+        startedAt: now - 11 * 60_000, // start 11 minut temu
+        elapsedSeconds: 0,
+      },
+    });
+
+    await render(<Timer />);
+    await advance(500);
+
+    expect(screen.getByText('Jak zareagował układ nerwowy?')).toBeTruthy();
+    expect(playBell).not.toHaveBeenCalled(); // dzwonek zagrał już w powiadomieniu
+    await fireEvent.press(screen.getByText('Zniecierpliwienie'));
+    await fireEvent.press(screen.getByText('Zapisz obserwację'));
+
+    expect(useTrackingStore.getState().sessions[0]).toMatchObject({
+      durationSeconds: 600,
+      completed: true,
+      frustrationLevel: 'impatient',
+    });
+    expect(useTrackingStore.getState().activeTimer).toBeNull();
+  });
+
+  it('po przywróceniu trwającej sesji odlicza dalej bez ponownej wibracji startu', async () => {
+    const now = Date.now();
+    useTrackingStore.setState({
+      activeTimer: {
+        status: 'running',
+        mode: 'standard',
+        durationSeconds: 600,
+        accumulatedMs: 0,
+        startedAt: now - 4 * 60_000,
+        elapsedSeconds: 0,
+      },
+    });
+
+    await render(<Timer />);
+    await advance(500);
+
+    expect(screen.getByTestId('timer-display').props.children).toBe('06:00');
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+  });
+
+  it('„Nie zapisuj” także czyści zapisaną sesję', async () => {
+    await render(<Timer />);
+    await fireEvent.press(screen.getByLabelText('Rozpocznij obserwację'));
+    await advance(60_000);
+    await fireEvent.press(screen.getByText('Nie zapisuj'));
+
+    expect(useTrackingStore.getState().activeTimer).toBeNull();
   });
 });
 
